@@ -1,0 +1,404 @@
+import telebot
+import config
+import reports
+import sqlite3
+import db_func
+from telebot import types
+
+bot = telebot.TeleBot(config.key)
+URL = 'https://api.telegram.org/bot'
+
+# Подключили базу данных
+conn = sqlite3.connect('telebotdb.db', check_same_thread=False)
+cursor = conn.cursor()
+
+# Функция, которая непосредственно работает с таблицей.
+def db_table_val(user_id: int, user_name: str, user_surname: str, username: str):
+	cursor.execute('INSERT INTO control (user_id, user_name, user_surname, username) VALUES (?, ?, ?, ?)', (user_id, user_name, user_surname, username))
+	conn.commit()
+
+# Базовая клавиатура
+@bot.message_handler(commands=["start"])
+def welcome(message):
+    #keyboard
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    item1 = types.KeyboardButton("ГВС ДЗМ")
+    item2 = types.KeyboardButton("НПКЦ МЕДИЦИНА")
+    item3 = types.KeyboardButton("НАУКА/R&D/ПРОЕКТЫ")
+    item4 = types.KeyboardButton("ОНКОЛОГИЯ")
+    item5 = types.KeyboardButton("/start")
+    markup.add(item1, item2,item3,item4,item5)
+    bot.send_message(message.chat.id, f"Приветствую тебя {message.from_user.first_name} ,\n"
+                                      f"Данный бот предназначен для отправки актуальных отчетов ИАО - Радиологии Москвы,\n"
+                                      f"Инструкция: пользоваться только стандартными запросами на встроенной клавиатуре, отчеты разбиты на блоки.\n"
+                                      f"Для перезапуска бота требуется нажать кнопну /start, \n"
+                                      f"После нажатия кнопки /start данные в боте обновятся , если вносились обновления.\n"
+                                      f"Выберите блок отчетности:",
+                                      reply_markup=markup)
+
+    us_id = message.from_user.id
+    us_name = message.from_user.first_name
+    us_sname = message.from_user.last_name
+    username = message.from_user.username
+    db_table_val(user_id=us_id, user_name=us_name, user_surname=us_sname, username=username)
+
+
+@bot.message_handler(content_types=["text"])
+def blabla(message):
+    if message.text == "ГВС ДЗМ": # Блок первой ступени
+        # клавиатура
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("Оборудование")
+        item2 = types.KeyboardButton("ЕРИС ЕМИАС")
+        item3 = types.KeyboardButton("ВКК")
+        item4 = types.KeyboardButton("Статистика результатов просмотра в ЛК")
+        item5 = types.KeyboardButton("Назад")
+        markup.add(item1, item2, item3, item4, item5)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет отчет интересует ?", reply_markup=markup)
+
+    elif message.text == "НПКЦ МЕДИЦИНА": # Блок первой ступени
+        # Нижний уровень клавиатуры
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Отчет МРЦ")
+        item2 = types.InlineKeyboardButton("Ср. время подготовки заключения")
+        item3 = types.InlineKeyboardButton("ВКК")
+        item4 = types.InlineKeyboardButton("Назад", callback_data='back')
+        markup.add(item1, item2, item3, item4)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет ММГ интересует ?", reply_markup=markup)
+
+    elif message.text == "НАУКА/R&D/ПРОЕКТЫ": # Блок первой ступени
+        # Нижний уровень клавиатуры
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Статистика применения технологий РР")
+        item2 = types.InlineKeyboardButton("Маршрутизация на ИИ-сервисы")
+        item3 = types.InlineKeyboardButton("Назад")
+        markup.add(item1, item2, item3)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет МРЦ интересует ?", reply_markup=markup)
+
+    elif message.text == "ОНКОЛОГИЯ": # Блок первой ступени
+        # Нижний уровень клавиатуры
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("КТ")
+        item2 = types.InlineKeyboardButton("МРТ")
+        item3 = types.InlineKeyboardButton("ММГ")
+        item4 = types.InlineKeyboardButton("Назад")
+        markup.add(item1, item2, item3, item4)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет МРЦ интересует ?", reply_markup=markup)
+
+    elif message.text == "Оборудование": # в блоке ГВС ДЗМ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='eq_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='eq_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "ЕРИС ЕМИАС": # в блоке ГВС ДЗМ
+        markup = types.ReplyKeyboardMarkup(row_width=1)
+        item1 = types.InlineKeyboardButton("Работа амбулаторных МО МРЦ")
+        item2 = types.InlineKeyboardButton("Работа амбулаторных МО вне МРЦ")
+        item3 = types.InlineKeyboardButton("Работа стационарных и специализированных МО")
+        item4 = types.InlineKeyboardButton("Назад")
+        markup.add(item1, item2, item3, item4)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет МРЦ интересует ?", reply_markup=markup)
+
+    elif message.text == "Работа амбулаторных МО МРЦ": # в блоке ЕРИС ЕМИАС
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='eris_mrc_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='eris_mrc_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Работа амбулаторных МО вне МРЦ": # в блоке ЕРИС ЕМИАС
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='eris_vne_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='eris_vne_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Работа стационарных и специализированных МО": # в блоке ЕРИС ЕМИАС
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='eris_st_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='eris_st_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Статистика результатов просмотра в ЛК": # в блоке ГВС ДЗМ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='stat_lc_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='stat_lc_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "ВКК": # в блоке ГВС ДЗМ
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("МРЦ")
+        item2 = types.InlineKeyboardButton("Вне МРЦ")
+        item3 = types.InlineKeyboardButton("Назад")
+        markup.add(item1, item2, item3)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет ВКК интересует ?", reply_markup=markup)
+
+    elif message.text == "МРЦ": # в блоке ВКК
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='vcc_mrc_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='vcc_mrc_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Вне МРЦ": # в блоке ВКК
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='vcc_vne_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='vcc_vne_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Отчет МРЦ": # в блоке НПКЦ МЕДИЦИНА
+        markup = types.ReplyKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Основной отчет МРЦ")
+        item2 = types.InlineKeyboardButton("Описания врачами на местах в МО")
+        item3 = types.InlineKeyboardButton("Назад")
+        markup.add(item1, item2, item3)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Какой конкретно отчет МРЦ интересует ?", reply_markup=markup)
+
+    elif message.text == "Основной отчет МРЦ": # в блоке ГВС ДЗМ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='mrc_osn_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='mrc_osn_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Описания врачами на местах в МО": # в блоке ГВС ДЗМ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='mrc_mo_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='mrc_mo_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Ср. время подготовки заключения": # в блоке ГВС ДЗМ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='time_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='time_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Статистика применения технологий РР": # в блоке НАУКА/R&D/ПРОЕКТЫ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='stat_pp_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='stat_pp_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "Маршрутизация на ИИ-сервисы": # в блоке НАУКА/R&D/ПРОЕКТЫ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='mar_ii_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='mar_ii_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "КТ": # в блоке ОНКОЛОГИЯ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='kt_onko_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='kt_onko_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "МРТ": # в блоке ОНКОЛОГИЯ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='mrt_onko_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='mrt_onko_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+    elif message.text == "ММГ": # в блоке ОНКОЛОГИЯ
+        # Нижний уровень клавиатуры
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        item1 = types.InlineKeyboardButton("Файл Excel", callback_data='mmg_onko_excel')
+        item2 = types.InlineKeyboardButton("Слайды", callback_data='mmg_onko_slide')
+        markup.add(item1, item2)
+        # отправка сообщения
+        bot.send_message(message.chat.id, "Выберите формат: ", reply_markup=markup)
+
+
+
+    elif (message.text == "Назад"):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        item1 = types.KeyboardButton("ГВС ДЗМ")
+        item2 = types.KeyboardButton("НПКЦ МЕДИЦИНА")
+        item3 = types.KeyboardButton("НАУКА/R&D/ПРОЕКТЫ")
+        item4 = types.KeyboardButton("ОНКОЛОГИЯ")
+        item5 = types.KeyboardButton("/start")
+        markup.add(item1, item2, item3, item4, item5)
+        bot.send_message(message.chat.id, "Вы вернулись в главное меню", reply_markup=markup)
+
+
+    else:
+        def repeat_all_message(message):
+            print(message.text)
+            bot.send_message(message.chat.id, message.text)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_inline(call):
+    try:
+        if call.message:
+            if call.data == 'eq_excel': # Это файл оборудования
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eq_excel)
+            if call.data == 'eq_slide': # Это слайд оборудования
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eq_slide)
+            if call.data == 'eris_mrc_excel': # Это файл Работа амбулаторных МО МРЦ
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_mrc_excel)
+            if call.data == 'eris_mrc_slide': # Это слайд Работа амбулаторных МО МРЦ
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_mrc_slide)
+            if call.data == 'eris_vne_excel': # Это файл Работа амбулаторных МО ВНЕ МРЦ
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_vne_excel)
+            if call.data == 'eris_vne_slide': # Это слайд Работа амбулаторных МО ВНЕ МРЦ
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_vne_slide)
+            if call.data == 'eris_st_excel': # Это файл Работа амбулаторных МО в стационарах
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_st_excel)
+            if call.data == 'eris_st_slide': # Это слайд Работа амбулаторных МО в стационарах
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.eris_st_slide)
+            if call.data == 'stat_lc_excel': # Статистика результатов просмотра в ЛК
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.stat_lc_excel)
+            if call.data == 'stat_lc_slide': # Статистика результатов просмотра в ЛК
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.stat_lc_slide)
+            if call.data == 'vcc_mrc_excel': # ВКК МРЦ эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.vcc_mrc_excel)
+            if call.data == 'vcc_mrc_slide': # ВКК МРЦ слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.vcc_mrc_slide)
+            if call.data == 'vcc_vne_excel': # ВКК Вне МРЦ эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.vcc_vne_excel)
+            if call.data == 'vcc_vne_slide': # ВКК Вне МРЦ слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.vcc_vne_slide)
+            if call.data == 'mrc_osn_excel': # Мрц основной отчет эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrc_osn_excel)
+            if call.data == 'mrc_osn_slide': # Мрц основной отчет слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrc_osn_slide)
+            if call.data == 'mrc_mo_excel': # Мрц Описания в МО эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrc_mo_excel)
+            if call.data == 'mrc_mo_slide': # Мрц описания в МО слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrc_mo_slide)
+            if call.data == 'time_excel': # Ср время ожидания эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.time_excel)
+            if call.data == 'time_slide': # Ср время ожидания слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.time_slide)
+            if call.data == 'stat_pp_excel': # Статистика применения технологий РР эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.stat_pp_excel)
+            if call.data == 'stat_pp_slide': # Статистика применения технологий РР слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.stat_pp_slide)
+            if call.data == 'mar_ii_excel': # Маршрутизация на ИИ-сервисы эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mar_ii_excel)
+            if call.data == 'mar_ii_slide': # Маршрутизация на ИИ-сервисы слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mar_ii_slide)
+            if call.data == 'kt_onko_excel': # КТ - онкология эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.kt_onko_excel)
+            if call.data == 'kt_onko_slide': # КТ - онкология слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.kt_onko_slide)
+            if call.data == 'mrt_onko_excel': # МРТ - онкология эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrt_onko_excel)
+            if call.data == 'mrt_onko_slide': # МРТ - онкология слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mrt_onko_slide)
+            if call.data == 'mmg_onko_excel': # ММГ - онкология эксель
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mmg_onko_excel)
+            if call.data == 'mmg_onko_slide': # ММГ - онкология слайд
+                bot.send_message(call.message.chat.id, 'Отправка в процессе...')
+                bot.send_document(call.from_user.id, reports.mmg_onko_slide)
+
+
+
+
+            # remove inline buttons
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text="Файл Excel",reply_markup=None)
+            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                  text="Слайды",reply_markup=None)
+            # show alert
+            bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
+                                      text="Загрузка...")
+
+    except Exception as e:
+        print(repr(e))
+
+# Данная функция формирует Хэши файлов, закидывай файлы в бот и получи обратно ХЭШ
+@bot.message_handler(content_types=["document"])
+def handle_files(message):
+  document_id = message.document.file_id
+  file_info = bot.get_file(document_id)
+  print(document_id) # Выводим file_id
+  print(f'http://api.telegram.org/file/bot{bot}/{file_info.file_path}') # Выводим ссылку на файл
+  bot.send_message(message.chat.id, document_id) # Отправляем пользователю file_id
+  bot.send_document(message.chat.id, document_id) # Отправляем пользователю файл для проверки , что файл загрузился и отправляется
+
+
+# RUN
+if __name__ == '__main__':
+    bot.infinity_polling()
+
+#if __name__ == '__main__': # чтобы код выполнялся только при запуске в виде сценария, а не при импорте модуля
+#    try:
+#      bot.polling(none_stop=True) # запуск бота
+#    except Exception as e:
+#      print(e) # или import traceback; traceback.print_exc() для печати полной инфы
+#      time.sleep(15)
